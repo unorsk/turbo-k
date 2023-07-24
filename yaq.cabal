@@ -20,8 +20,14 @@ common warnings
 
 library
   import:           warnings, extensions
-  exposed-modules:  MyLib
-  build-depends:    base ^>=4.17.0.0
+  exposed-modules:
+    MyLib
+    NaiveParser
+
+  build-depends:
+    , base        ^>=4.17.0.0
+    , megaparsec
+
   hs-source-dirs:   lib
   default-language: GHC2021
 
@@ -29,7 +35,8 @@ executable yaq
   import:           warnings, extensions
   main-is:          Main.hs
   build-depends:
-    , base  ^>=4.17.0.0
+    , base       ^>=4.17.0.0
+    , haskeline
     , yaq
 
   hs-source-dirs:   app
