@@ -37,8 +37,9 @@ executable yaq
   import:           warnings, extensions
   main-is:          Main.hs
   build-depends:
-    , base       ^>=4.17.0.0
+    , base                  ^>=4.17.0.0
     , haskeline
+    , optparse-applicative
     , yaq
 
   hs-source-dirs:   app
