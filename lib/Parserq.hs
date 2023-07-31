@@ -3,7 +3,6 @@ module Parserq (Parserq, parseq, parseNumber, parseFloat, parseOperation, parseL
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec
-import Text.Megaparsec (Parsec)
 import Text.Megaparsec.Char
 
 data Expr

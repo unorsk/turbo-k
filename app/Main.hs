@@ -1,8 +1,7 @@
 module Main where
 
--- import MyLib qualified (someFunc)
-
-import NaiveParser (Error)
+import Data.Text (pack)
+import Parserq (parseq)
 import System.Console.Haskeline
   ( InputT
   , defaultSettings
@@ -10,6 +9,7 @@ import System.Console.Haskeline
   , outputStrLn
   , runInputT
   )
+import Text.Megaparsec (parse)
 
 data Some = Error
 
@@ -23,11 +23,12 @@ main =
     case minput of
       Nothing -> return ()
       Just "quit" -> return ()
-      Just input -> do
-        outputStrLn $ "Input was: " ++ input
-        loop
-
--- MyLib.someFunc
+      Just input ->
+        let r = parse parseq "" (pack input)
+         in do
+              outputStrLn $ show r
+              -- outputStrLn $ "Input was: " ++ input
+              loop
 
 -- yaq>
 -- q)a:42

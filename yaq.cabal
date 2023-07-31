@@ -39,7 +39,9 @@ executable yaq
   build-depends:
     , base                  ^>=4.17.0.0
     , haskeline
+    , megaparsec
     , optparse-applicative
+    , text
     , yaq
 
   hs-source-dirs:   app
