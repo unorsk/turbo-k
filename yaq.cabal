@@ -23,10 +23,12 @@ library
   exposed-modules:
     MyLib
     NaiveParser
+    Parserq
 
   build-depends:
     , base        ^>=4.17.0.0
     , megaparsec
+    , text
 
   hs-source-dirs:   lib
   default-language: GHC2021
