@@ -1,13 +1,13 @@
 module Main where
 
 import Data.Text (pack)
-import Parserq (parseq)
+import Parserq (evalq, parseq)
 import System.Console.Haskeline
-  ( InputT
-  , defaultSettings
-  , getInputLine
-  , outputStrLn
-  , runInputT
+  ( InputT,
+    defaultSettings,
+    getInputLine,
+    outputStrLn,
+    runInputT,
   )
 import Text.Megaparsec (parse)
 
@@ -16,25 +16,25 @@ data Some = Error
 main :: IO ()
 main =
   runInputT defaultSettings loop
- where
-  loop :: InputT IO ()
-  loop = do
-    minput <- getInputLine "yaq> "
-    case minput of
-      Nothing -> return ()
-      Just "quit" -> return ()
-      Just input ->
-        let r = parse parseq "" (pack input)
-         in do
-              outputStrLn $ show r
-              -- outputStrLn $ "Input was: " ++ input
-              loop
+  where
+    loop :: InputT IO ()
+    loop = do
+      minput <- getInputLine "yaq) "
+      case minput of
+        Nothing -> return ()
+        Just "quit" -> return ()
+        Just input -> do
+          let expr = parse parseq "" (pack input)
+           in case expr of
+                Left e -> outputStrLn ("Error: " <> show e)
+                Right r -> outputStrLn $ show $ evalq r
+          loop
 
--- yaq>
--- q)a:42
--- q)a :42
--- q)a: 42
--- q)a : 42
--- q)a
--- q)c
+-- yaq)
+-- yaq)a:42
+-- yaq)a :42
+-- yaq)a: 42
+-- yaq)a : 42
+-- yaq)a
+-- yaq)c
 -- c is not defined
