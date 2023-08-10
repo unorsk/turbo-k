@@ -1,9 +1,11 @@
-module Parserq (Parserq, parseq, evalq, parseTerm, parseFloat, parseOperation, parseList) where
+module Parserq (Parserq, parseq, evalq) where
 
+import Control.Monad (void)
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer qualified as L
 
 data Result
   = RInt Integer
@@ -34,6 +36,8 @@ instance Show Expr where
 data Operation
   = Add
   | Subtract
+  | Multiply
+  | Divide
   deriving (Eq, Show)
 
 data Term
@@ -55,22 +59,37 @@ data Boolean
 type Parserq = Parsec Void Text
 
 parseExpr' :: Parserq Expr
-parseExpr' = Expr <$> (parseTerm <* many spaceChar) <*> parseOperation <* many spaceChar <*> parseTerm
+parseExpr' =
+  Expr
+    <$> (parseTerm <* many spaceChar)
+    <*> parseOperation
+    <* many spaceChar
+    <*> parseTerm
 
 parseExpr :: Parserq Expr
 parseExpr =
   try parseList
     <|> try parseExpr'
-    <|> Term <$> try parseTerm
+    <|> Term
+    <$> try parseTerm
+
+-- <$> try comment
 
 parseList :: Parserq Expr
-parseList = List <$> between (single '(') (single ')') (sepBy parseTerm (many spaceChar >> single ';' >> many spaceChar))
+parseList =
+  List
+    <$> between
+      (single '(')
+      (single ')')
+      (sepBy parseTerm (many spaceChar >> single ';' >> many spaceChar))
 
 parseOperation :: Parserq Operation
 parseOperation =
   choice
-    [ Add <$ single '+',
-      Subtract <$ single '-'
+    [ Add <$ single '+'
+    , Subtract <$ single '-'
+    , Multiply <$ single '*'
+    , Divide <$ single '%'
     ]
 
 parseBoolean :: Parserq Boolean
@@ -82,25 +101,40 @@ parseBoolean = do
 -- parseNumber :: Parserq Number
 -- parseNumber = MyFloat <$> try parseFloat <|> MyInt <$> try parseInt
 
+comment :: Parserq ()
+comment =
+  L.space
+    space1
+    -- (void $ some space)
+    (L.skipLineComment "/")
+    empty
+
 parseTerm :: Parserq Term
-parseTerm = Boolean <$> try parseBoolean <|> MyFloat <$> try parseFloat <|> MyInt <$> try parseInt
+parseTerm =
+  Boolean
+    <$> try parseBoolean <|> MyFloat
+    <$> try parseFloat <|> MyInt
+    <$> try parseInt
 
 parseInt :: Parserq Integer
 parseInt = do
-  h <- many digitChar
+  h <- some digitChar
   return (read h :: Integer)
 
 parseFloat :: Parserq Float
 parseFloat = do
-  h <- many digitChar
+  h <- some digitChar
   _ <- char '.'
-  t <- many digitChar
+  t <- some digitChar
   return (read (h <> "." <> t) :: Float)
 
-opeartion :: (Num a0) => Operation -> (a0 -> a0 -> a0)
+opeartion :: Num a0 => Operation -> (a0 -> a0 -> a0)
 opeartion = \case
   Add -> (+)
   Subtract -> (-)
+  Multiply -> (*)
+
+-- Divide -> (/)
 
 evalq :: Expr -> Result
 evalq = \case
@@ -123,6 +157,6 @@ evalTerm = \case
   Boolean b -> RBoolean b
 
 parseq :: Parserq Expr
-parseq = parseExpr <* eof
+parseq = parseExpr <* choice [empty, eof, comment]
 
 -- parseq = parseNumber <* eof
