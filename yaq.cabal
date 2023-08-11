@@ -26,7 +26,7 @@ library
     Parserq
 
   build-depends:
-    , base        ^>=4.17.0.0
+    , base        ^>=4.18.0.0
     , megaparsec
     , text
 
@@ -37,7 +37,7 @@ executable yaq
   import:           warnings, extensions
   main-is:          Main.hs
   build-depends:
-    , base                  ^>=4.17.0.0
+    , base                  ^>=4.18.0.0
     , haskeline
     , megaparsec
     , optparse-applicative
@@ -54,7 +54,7 @@ test-suite yaq-test
   hs-source-dirs:   test
   main-is:          Main.hs
   build-depends:
-    , base              ^>=4.17.0.0
+    , base              ^>=4.18.0.0
     , hspec
     , hspec-megaparsec
     , megaparsec
