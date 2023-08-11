@@ -30,12 +30,3 @@ main =
               Left e -> outputStrLn ("Error: " <> show e)
               Right r -> outputStrLn $ show $ evalq r
         loop
-
--- yaq)
--- yaq)a:42
--- yaq)a :42
--- yaq)a: 42
--- yaq)a : 42
--- yaq)a
--- yaq)c
--- c is not defined

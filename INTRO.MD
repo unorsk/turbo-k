@@ -12,6 +12,8 @@ q)a
 ## Data types
 int   - 64-bit signed integer
 float - 8-byte value conforming to the IEEE floating-point specification
+date - yyyy.mm.dd - is a signed integer, the number of days since the millenium (2000.01.01 / this is actually 0)
+division always returns a float
 
 ## Comments
 

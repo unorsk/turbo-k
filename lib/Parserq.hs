@@ -17,8 +17,8 @@ data Result
 
 instance Show Result where
   show (RInt i) = show i
-  show (RFloat f) = show f
-  show (RBoolean b) = show b
+  show (RFloat f) = show f <> "f"
+  show (RBoolean b) = show b -- TODO
   show (RList l) = show l
   show (RError e) = e
 
@@ -41,9 +41,10 @@ data Operation
   deriving (Eq, Show)
 
 data Term
-  = MyInt Integer
-  | MyFloat Float
-  | Boolean Boolean
+  = QInt Integer
+  | QFloat Float
+  | QDate Integer
+  | QBoolean Boolean
   deriving (Eq, Show)
 
 data Boolean
@@ -92,6 +93,19 @@ parseOperation =
     , Divide <$ single '%'
     ]
 
+parseDate :: Parserq Integer
+parseDate = do
+  y <- count 4 digitChar
+  _ <- single '.'
+  m <- count 2 digitChar
+  _ <- single '.'
+  d <- count 2 digitChar
+  -- TODO (:
+  let years = (read y :: Integer) - 2000
+      months = (read m :: Integer) - 1
+      days = read d :: Integer
+   in return (years * 365 + months * 30 + days)
+
 parseBoolean :: Parserq Boolean
 parseBoolean = do
   c <- oneOf ['0', '1']
@@ -105,15 +119,18 @@ comment :: Parserq ()
 comment =
   L.space
     space1
-    -- (void $ some space)
     (L.skipLineComment "/")
     empty
 
 parseTerm :: Parserq Term
 parseTerm =
-  Boolean
-    <$> try parseBoolean <|> MyFloat
-    <$> try parseFloat <|> MyInt
+  QBoolean
+    <$> try parseBoolean
+      <|> QDate
+    <$> try parseDate
+      <|> QFloat
+    <$> try parseFloat
+      <|> QInt
     <$> try parseInt
 
 parseInt :: Parserq Integer
@@ -128,33 +145,47 @@ parseFloat = do
   t <- some digitChar
   return (read (h <> "." <> t) :: Float)
 
-opeartion :: Num a0 => Operation -> (a0 -> a0 -> a0)
-opeartion = \case
+opeartion :: Operation -> (Integer -> Integer -> Integer)
+opeartion o a0 a1 = case o of
+  Add -> a0 + a1
+  Subtract -> a0 - a1
+  Multiply -> a0 * a1
+  Divide -> fromInteger (round (fromIntegral a0 / fromIntegral a1))
+
+opeartionF :: Fractional a0 => Operation -> (a0 -> a0 -> a0)
+opeartionF = \case
   Add -> (+)
   Subtract -> (-)
   Multiply -> (*)
-
--- Divide -> (/)
+  Divide -> (/)
 
 evalq :: Expr -> Result
 evalq = \case
-  Expr (MyInt i1) o (MyInt i2) -> RInt $ opeartion o i1 i2
-  Expr (MyFloat f1) o (MyFloat f2) -> RFloat $ opeartion o f1 f2
-  Expr (MyInt i1) o (MyFloat f2) -> RFloat $ opeartion o (fromIntegral i1) f2
-  Expr (MyFloat f1) o (MyInt i2) -> RFloat $ opeartion o f1 (fromIntegral i2)
-  Expr (MyInt _) _ (Boolean _) -> RError "Cannot mix up an int and a boolean"
-  Expr (Boolean _) _ (MyInt _) -> RError "Cannot mix up an int and a boolean"
-  Expr (MyFloat _) _ (Boolean _) -> RError "Cannot mix up a float and a boolean"
-  Expr (Boolean _) _ (MyFloat _) -> RError "Cannot mix up a float and a boolean"
+  Expr (QDate i1) o (QInt i2) -> RInt $ opeartion o i1 i2
+  Expr (QInt i1) o (QDate i2) -> RInt $ opeartion o i1 i2
+  Expr (QDate i1) o (QDate i2) -> RInt $ opeartion o i1 i2
+  Expr (QInt i1) o (QInt i2) -> RInt $ opeartion o i1 i2
+  Expr (QFloat f1) o (QFloat f2) -> RFloat $ opeartionF o f1 f2
+  Expr (QInt i1) o (QFloat f2) -> RFloat $ opeartionF o (fromIntegral i1) f2
+  Expr (QFloat f1) o (QInt i2) -> RFloat $ opeartionF o f1 (fromIntegral i2)
+  Expr (QDate _) _ (QBoolean _) -> RError "Cannot mix up an int and a boolean"
+  Expr (QBoolean _) _ (QDate _) -> RError "Cannot mix up an int and a boolean"
+  Expr (QInt _) _ (QBoolean _) -> RError "Cannot mix up an int and a boolean"
+  Expr (QBoolean _) _ (QInt _) -> RError "Cannot mix up an int and a boolean"
+  Expr (QDate _) _ (QFloat _) -> RError "Cannot mix up a float and a boolean"
+  Expr (QFloat _) _ (QDate _) -> RError "Cannot mix up a float and a boolean"
+  Expr (QFloat _) _ (QBoolean _) -> RError "Cannot mix up a float and a boolean"
+  Expr (QBoolean _) _ (QFloat _) -> RError "Cannot mix up a float and a boolean"
   Term t -> evalTerm t
   List l -> RList $ map evalTerm l
-  Expr (Boolean _) _ (Boolean _) -> RError "Cannot add a boolean to a boolean"
+  Expr (QBoolean _) _ (QBoolean _) -> RError "Cannot add a boolean to a boolean"
 
 evalTerm :: Term -> Result
 evalTerm = \case
-  MyInt i -> RInt i
-  MyFloat f -> RFloat f
-  Boolean b -> RBoolean b
+  QInt i -> RInt i
+  QDate i -> RInt i
+  QFloat f -> RFloat f
+  QBoolean b -> RBoolean b
 
 parseq :: Parserq Expr
 parseq = parseExpr <* choice [empty, eof, comment]
