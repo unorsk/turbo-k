@@ -9,9 +9,7 @@ import System.Console.Haskeline
   , outputStrLn
   , runInputT
   )
-import Text.Megaparsec (parse)
-
-data Some = Error
+import Text.Megaparsec (errorBundlePretty, parse)
 
 main :: IO ()
 main =
@@ -27,6 +25,6 @@ main =
       Just input -> do
         let expr = parse parseq "" (pack input)
          in case expr of
-              Left e -> outputStrLn ("Error: " <> show e)
+              Left e -> outputStrLn $ errorBundlePretty e
               Right r -> outputStrLn $ show $ evalq r
         loop

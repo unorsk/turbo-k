@@ -1,4 +1,4 @@
-module Parserq (Parserq, parseq, evalq) where
+module Parserq (Parserq, parseq, evalq, Expr (..), QTerm (..), QOperation (..)) where
 
 import Control.Monad (void)
 import Data.Text (Text)
@@ -10,22 +10,24 @@ import Text.Megaparsec.Char.Lexer qualified as L
 data Result
   = RInt Integer
   | RFloat Float
-  | RBoolean Boolean
+  | RBoolean Bool
   | RList [Result]
   | RError String
+  | RSymbol String
   deriving (Eq)
 
 instance Show Result where
   show (RInt i) = show i
   show (RFloat f) = show f <> "f"
-  show (RBoolean b) = show b -- TODO
+  show (RBoolean b) = if b then "1b" else "0b"
   show (RList l) = show l
   show (RError e) = e
+  show (RSymbol s) = "`" <> s
 
 data Expr
-  = Expr Term Operation Term
-  | Term Term
-  | List [Term]
+  = Expr QTerm QOperation QTerm
+  | Term QTerm
+  | List [QTerm]
   deriving (Eq)
 
 instance Show Expr where
@@ -33,29 +35,21 @@ instance Show Expr where
   show (Term t) = show t
   show (List ts) = "(" <> show ts <> ")"
 
-data Operation
+data QOperation
   = Add
   | Subtract
   | Multiply
   | Divide
+  | Equals
   deriving (Eq, Show)
 
-data Term
+data QTerm
   = QInt Integer
   | QFloat Float
   | QDate Integer
-  | QBoolean Boolean
+  | QBoolean Bool
+  | QSymbol String
   deriving (Eq, Show)
-
-data Boolean
-  = B1
-  | B0
-  deriving (Eq, Show)
-
--- data Number
---   = MyInt Integer
---   | MyFloat Float
---   deriving (Eq, Show)
 
 type Parserq = Parsec Void Text
 
@@ -74,8 +68,6 @@ parseExpr =
     <|> Term
     <$> try parseTerm
 
--- <$> try comment
-
 parseList :: Parserq Expr
 parseList =
   List
@@ -84,13 +76,14 @@ parseList =
       (single ')')
       (sepBy parseTerm (many spaceChar >> single ';' >> many spaceChar))
 
-parseOperation :: Parserq Operation
+parseOperation :: Parserq QOperation
 parseOperation =
   choice
     [ Add <$ single '+'
     , Subtract <$ single '-'
     , Multiply <$ single '*'
     , Divide <$ single '%'
+    , Equals <$ single '='
     ]
 
 parseDate :: Parserq Integer
@@ -106,14 +99,16 @@ parseDate = do
       days = read d :: Integer
    in return (years * 365 + months * 30 + days)
 
-parseBoolean :: Parserq Boolean
+parseBoolean :: Parserq Bool
 parseBoolean = do
   c <- oneOf ['0', '1']
   _ <- single 'b'
-  return (if c == '1' then B1 else B0)
+  return (c == '1')
 
--- parseNumber :: Parserq Number
--- parseNumber = MyFloat <$> try parseFloat <|> MyInt <$> try parseInt
+parseSymbol :: Parserq String
+parseSymbol = do
+  _ <- single '`'
+  many alphaNumChar
 
 comment :: Parserq ()
 comment =
@@ -122,7 +117,7 @@ comment =
     (L.skipLineComment "/")
     empty
 
-parseTerm :: Parserq Term
+parseTerm :: Parserq QTerm
 parseTerm =
   QBoolean
     <$> try parseBoolean
@@ -132,6 +127,8 @@ parseTerm =
     <$> try parseFloat
       <|> QInt
     <$> try parseInt
+      <|> QSymbol
+    <$> try parseSymbol
 
 parseInt :: Parserq Integer
 parseInt = do
@@ -145,29 +142,37 @@ parseFloat = do
   t <- some digitChar
   return (read (h <> "." <> t) :: Float)
 
-opeartion :: Operation -> (Integer -> Integer -> Integer)
-opeartion o a0 a1 = case o of
+operation :: QOperation -> (Integer -> Integer -> Integer)
+operation o a0 a1 = case o of
   Add -> a0 + a1
   Subtract -> a0 - a1
   Multiply -> a0 * a1
   Divide -> fromInteger (round (fromIntegral a0 / fromIntegral a1))
+  Equals -> error "Cannot compare ints"
 
-opeartionF :: Fractional a0 => Operation -> (a0 -> a0 -> a0)
-opeartionF = \case
+operationF :: Fractional a0 => QOperation -> (a0 -> a0 -> a0)
+operationF = \case
   Add -> (+)
   Subtract -> (-)
   Multiply -> (*)
   Divide -> (/)
+  Equals -> error "Cannot compare floats"
 
 evalq :: Expr -> Result
 evalq = \case
-  Expr (QDate i1) o (QInt i2) -> RInt $ opeartion o i1 i2
-  Expr (QInt i1) o (QDate i2) -> RInt $ opeartion o i1 i2
-  Expr (QDate i1) o (QDate i2) -> RInt $ opeartion o i1 i2
-  Expr (QInt i1) o (QInt i2) -> RInt $ opeartion o i1 i2
-  Expr (QFloat f1) o (QFloat f2) -> RFloat $ opeartionF o f1 f2
-  Expr (QInt i1) o (QFloat f2) -> RFloat $ opeartionF o (fromIntegral i1) f2
-  Expr (QFloat f1) o (QInt i2) -> RFloat $ opeartionF o f1 (fromIntegral i2)
+  Expr (QSymbol i1) Equals (QSymbol i2) -> RBoolean $ i1 == i2
+  Expr (QDate i1) o (QInt i2) -> RInt $ operation o i1 i2
+  Expr (QInt i1) Equals (QInt i2) -> RBoolean $ i1 == i2
+  Expr (QFloat i1) Equals (QFloat i2) -> RBoolean $ i1 == i2
+  Expr (QDate i1) Equals (QInt i2) -> RBoolean $ i1 == i2
+  Expr (QInt i1) Equals (QDate i2) -> RBoolean $ i1 == i2
+  Expr (QDate i1) Equals (QDate i2) -> RBoolean $ i1 == i2
+  Expr (QInt i1) o (QDate i2) -> RInt $ operation o i1 i2
+  Expr (QDate i1) o (QDate i2) -> RInt $ operation o i1 i2
+  Expr (QInt i1) o (QInt i2) -> RInt $ operation o i1 i2
+  Expr (QFloat f1) o (QFloat f2) -> RFloat $ operationF o f1 f2
+  Expr (QInt i1) o (QFloat f2) -> RFloat $ operationF o (fromIntegral i1) f2
+  Expr (QFloat f1) o (QInt i2) -> RFloat $ operationF o f1 (fromIntegral i2)
   Expr (QDate _) _ (QBoolean _) -> RError "Cannot mix up an int and a boolean"
   Expr (QBoolean _) _ (QDate _) -> RError "Cannot mix up an int and a boolean"
   Expr (QInt _) _ (QBoolean _) -> RError "Cannot mix up an int and a boolean"
@@ -180,12 +185,13 @@ evalq = \case
   List l -> RList $ map evalTerm l
   Expr (QBoolean _) _ (QBoolean _) -> RError "Cannot add a boolean to a boolean"
 
-evalTerm :: Term -> Result
+evalTerm :: QTerm -> Result
 evalTerm = \case
   QInt i -> RInt i
   QDate i -> RInt i
   QFloat f -> RFloat f
   QBoolean b -> RBoolean b
+  QSymbol s -> RSymbol s
 
 parseq :: Parserq Expr
 parseq = parseExpr <* choice [empty, eof, comment]
