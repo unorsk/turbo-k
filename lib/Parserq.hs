@@ -190,7 +190,7 @@ evalTerm = \case
   QInt i -> RInt i
   QDate i -> RInt i
   QFloat f -> RFloat f
-  QBoolean b -> RBoolean b
+  QBoolean b -> RBoolean (b == 1)
   QSymbol s -> RSymbol s
 
 parseq :: Parserq Expr
