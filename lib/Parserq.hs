@@ -1,6 +1,5 @@
 module Parserq (Parserq, parseq, evalq, Expr (..), QTerm (..), QOperation (..)) where
 
-import Control.Monad (void)
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec
@@ -47,8 +46,9 @@ data QTerm
   = QInt Integer
   | QFloat Float
   | QDate Integer
-  | QBoolean Bool
-  | QSymbol String
+  | QBoolean Integer
+  | -- | QBoolean (Refined ZeroToOne Integer)
+    QSymbol String
   deriving (Eq, Show)
 
 type Parserq = Parsec Void Text
@@ -99,11 +99,11 @@ parseDate = do
       days = read d :: Integer
    in return (years * 365 + months * 30 + days)
 
-parseBoolean :: Parserq Bool
+parseBoolean :: Parserq Integer
 parseBoolean = do
   c <- oneOf ['0', '1']
   _ <- single 'b'
-  return (c == '1')
+  return (read [c] :: Integer)
 
 parseSymbol :: Parserq String
 parseSymbol = do

@@ -17,6 +17,18 @@ timespan - is a number of nanoseconds since midnight, 12:00:00.000000000 / this 
 division always returns a float
 symbols - `aapl, can only be tested for equality?
 
+
+### Booleans
+
+```
+q)101b
+101b
+q)101b + 1
+2 1 2
+q)1b+1b
+2i
+```
+
 ## Comments
 
 / This is a comment
