@@ -1,19 +1,33 @@
-module Grammar where
+module Grammarq
+  ( QAst (..)
+  , QExpr (..)
+  , QTerm (..)
+  , QVerb (..)
+  , QAdverb (..)
+  , QTermVerb (..)
+  , QNoun (..)
+  ) where
 
-data Expr
-  = E1 Noun Verb Expr
-  | E2 Term Expr
+data QAst
+  = QAst [QExpr]
+  | QExpr
+
+data QExpr
+  = QExpr1 QNoun QVerb QExpr
+  | QExpr2 QTerm QExpr
   | Empty
 
-data Noun
-data Verb = V1 Term ADVERB | V2 VERB
+type QTerm = Either QNoun QVerb
+data QVerb = V1 QTerm QAdverb | V2 QTermVerb
 
-type Term = Either Noun Verb
+data QNoun
+  = QNounBooleans [Bool]
+  | QNounInts [Integer]
 
--- Lexer
-
-data ADVERB
-data VERB
+data QAdverb
+data QTermVerb
+  = QTermVerbPlus
+  | QTermVerbMinus
 
 {-
 

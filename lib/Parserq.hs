@@ -46,7 +46,7 @@ data QTerm
   = QInt Integer
   | QFloat Float
   | QDate Integer
-  | QBoolean Bool
+  | QBoolean Integer
   | -- | QBoolean (Refined ZeroToOne Integer)
     QSymbol String
   deriving (Eq, Show)
@@ -197,16 +197,3 @@ parseq :: Parserq Expr
 parseq = parseExpr <* choice [empty, eof, comment]
 
 -- parseq = parseNumber <* eof
-
-----------
-
-parser :: Text -> QAst
-parser = _very_last_moment
-
-eval :: QAst -> SideEffect Result
-evel = Q_
-
-performSideEffects :: SideEffect Result -> IO Result
-performSideEffects = _
-
-data SideEffect r = DropDatabase | CreateDatabase | CreateTable | Insert | Select

@@ -21,7 +21,8 @@ common warnings
 library
   import:           warnings, extensions
   exposed-modules:
-    MyLib
+    Evalq
+    Grammarq
     NaiveParser
     Parserq
 
