@@ -1,6 +1,9 @@
 ## Yet Another Q
 
-⚠️Not ready for any kind of use and will probably never be!
+>[!WARNING]
+>
+> Not ready for any kind of use and will probably never be!
+> 
 
 ### What's YAQ?
 
