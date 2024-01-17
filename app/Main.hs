@@ -17,7 +17,7 @@ main =
  where
   loop :: InputT IO ()
   loop = do
-    minput <- getInputLine "yaq) "
+    minput <- getInputLine "k) "
     case minput of
       Nothing -> return ()
       Just "quit" -> return ()

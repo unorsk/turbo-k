@@ -1,5 +1,5 @@
 cabal-version:   3.4
-name:            yaq
+name:            turbo-k
 version:         0.1.0.0
 license:         MIT
 license-file:    LICENSE
@@ -35,7 +35,7 @@ library
   hs-source-dirs:   lib
   default-language: GHC2021
 
-executable yaq
+executable turbo-k
   import:           warnings, extensions
   main-is:          Main.hs
   build-depends:
@@ -44,12 +44,12 @@ executable yaq
     , megaparsec
     , optparse-applicative
     , text
-    , yaq
+    , turbo-k
 
   hs-source-dirs:   app
   default-language: GHC2021
 
-test-suite yaq-test
+test-suite turbo-k-test
   import:           warnings, extensions
   default-language: GHC2021
   type:             exitcode-stdio-1.0
@@ -60,4 +60,4 @@ test-suite yaq-test
     , hspec
     , hspec-megaparsec
     , megaparsec
-    , yaq
+    , turbo-k
