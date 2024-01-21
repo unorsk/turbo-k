@@ -18,35 +18,18 @@ common extensions
 common warnings
   ghc-options: -Wall
 
-library
-  import:           warnings, extensions
-  exposed-modules:
-    Evalq
-    Grammarq
-    NaiveParser
-    Parserq
-
-  build-depends:
-    , base        ^>=4.18.0.0
-    , megaparsec
-    , refined
-    , text
-
-  hs-source-dirs:   lib
-  default-language: GHC2021
-
 executable turbo-k
   import:           warnings, extensions
   main-is:          Main.hs
+  other-modules:    TurboK
+  hs-source-dirs:   app
   build-depends:
     , base                  ^>=4.18.0.0
     , haskeline
     , megaparsec
     , optparse-applicative
     , text
-    , turbo-k
 
-  hs-source-dirs:   app
   default-language: GHC2021
 
 test-suite turbo-k-test

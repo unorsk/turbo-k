@@ -1,7 +1,6 @@
 module Main where
 
 import Data.Text (pack)
-import Parserq (evalq, parseq)
 import System.Console.Haskeline
   ( InputT
   , defaultSettings
@@ -10,6 +9,7 @@ import System.Console.Haskeline
   , runInputT
   )
 import Text.Megaparsec (errorBundlePretty, parse)
+import TurboK (Exp(..))
 
 main :: IO ()
 main =
@@ -23,8 +23,9 @@ main =
       Just "quit" -> return ()
       Just "" -> loop
       Just input -> do
-        let expr = parse parseq "" (pack input)
-         in case expr of
-              Left e -> outputStrLn $ errorBundlePretty e
-              Right r -> outputStrLn $ show $ evalq r
+        outputStrLn $ show input
+        -- let expr = parse parseq "" (pack input)
+        --  in case expr of
+        --       Left e -> outputStrLn $ errorBundlePretty e
+        --       Right r -> outputStrLn $ show $ evalq r
         loop

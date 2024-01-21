@@ -1,3 +1,6 @@
+### ref card of some sort
+
+```
 k has atom, list (2;`c), dict `a`b!(2;`c) and func {[x;y]x+y}.
 20 primitives/verbs, 6 operators/adverbs and 3 system functions.
 
@@ -55,3 +58,38 @@ f':jobs         / across machine
 handles 2:jobs  / across cluster
 
 LIMITS: names8 params8 locals8 globals16 constants128 jump256 v[i]:m[i;j] {z}'/\
+```
+
+### BNF of some sort
+```
+<Exprs>  ::=  <Exprs> ";" <expr>  |  <expr>
+<expr>   ::=  <noun> <verb> <expr>  |  <term> <expr>  |  empty
+<term>   ::=  <noun>  |  <verb>
+<verb>   ::=  <term> <Adverb>  |  <Verb>
+<noun>   ::=  <term> "[" <Exprs> "]"  |  "(" <Exprs> ")"  |  "{" <Exprs> "}"  |  <Noun>
+
+Further, <Adverb> <Verb> <Noun> can be defined,
+with minor variations between dialects, as:
+
+<Adverb> ::=  "'" | "/" | "\" | "':" | "/:" | "\:"
+<Verb>   ::=  <Verb1> | <Verb1> ":"
+<Verb1>  ::=  ":" | "+" | "-" | "*" | "%" | "!" | "&" | "|" | "<" | ">" | "=" | "~" | "," |
+              "^" | "#" | "_" | "$" | "?" | "@" | "." | <Digit> ":"
+<Noun>   ::=  <Names>  |  <Ints>  |  <Floats>  |  <String>  |  <Symbols>
+<Names>  ::=  <Names> "." <Name>  |  <Name>
+<Name>   ::=  <Letter>  |  <Name> <Letter>  |  <Name> <Digit>
+<Ints>   ::=  <Int>  |  <Ints> " " <Int>
+<Int>    ::=  "-" <Digits>  |  <Digits>
+<Floats> ::=  <Float>  |  <Floats> " " <Float>
+<Float>  ::=  <Int>  |  <Int> "." <Digits>  |  <Int> "." <Digits> "e" <Int>
+<String> ::=  '"' <Chars> '"'  |  "0x" <Bytes>
+<Chars>  ::=  <Chars> <Char>  |  empty
+<Char>   ::=  "\0" | "\t" | "\n" | "\r" | '\"' | "\\" | any
+<Bytes>  ::=  <Bytes> <Hex> <Hex>  |  empty
+<Symbols>::=  <Symbols> <Symbol>  |  <Symbol>
+<Symbol> ::=  "`"  |  "`" <Name>  |  "`" <String>
+<Digits> ::=  <Digit>  |  <Digits> <Digit>
+<Digit>  ::=  "0" | .. | "9"
+<Hex>    ::=  <Digit> | "a" | .. | "f"
+<Letter> ::=  "A" | .. | "Z" | "a" | .. | "z"
+```
