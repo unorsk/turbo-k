@@ -9,7 +9,7 @@ import System.Console.Haskeline
   , runInputT
   )
 import Text.Megaparsec (errorBundlePretty, parse)
-import TurboK (Exp(..))
+import TurboK (parseKExpr)
 
 main :: IO ()
 main =
@@ -23,9 +23,8 @@ main =
       Just "quit" -> return ()
       Just "" -> loop
       Just input -> do
-        outputStrLn $ show input
-        -- let expr = parse parseq "" (pack input)
-        --  in case expr of
-        --       Left e -> outputStrLn $ errorBundlePretty e
-        --       Right r -> outputStrLn $ show $ evalq r
+        let expr = parse parseKExpr "" (pack input)
+          in case expr of
+            Left e -> outputStrLn $ errorBundlePretty e
+            Right r -> outputStrLn $ show r
         loop

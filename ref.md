@@ -62,6 +62,8 @@ LIMITS: names8 params8 locals8 globals16 constants128 jump256 v[i]:m[i;j] {z}'/\
 
 ### BNF of some sort
 ```
+grammar: E:E;e|e e:nve|te| t:n|v v:tA|V n:t[E]|(E)|{E}|N
+
 <Exprs>  ::=  <Exprs> ";" <expr>  |  <expr>
 <expr>   ::=  <noun> <verb> <expr>  |  <term> <expr>  |  empty
 <term>   ::=  <noun>  |  <verb>
