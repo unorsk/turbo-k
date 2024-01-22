@@ -8,6 +8,7 @@ import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec.Char (letterChar, digitChar, hexDigitChar, string, char, spaceChar)
 import Text.Megaparsec.Char.Lexer (charLiteral)
+import Text.Megaparsec.Debug (dbg)
 
 type ParserK = Parsec Void Text
 
@@ -30,13 +31,13 @@ data KSymbol = KSymbol String deriving (Show, Eq)
 data KHex = KHex String deriving (Show, Eq)
 
 parseK :: ParserK KExprs
-parseK = parseExprs <* choice [empty, eof]
+parseK = dbg "parseExprs" parseExprs <* choice [empty, eof]
 
 parseExprs :: ParserK KExprs
 parseExprs = KExprs <$> sepBy parseKExpr (char ';')
 
 parseKExpr :: ParserK KExpr
-parseKExpr = parseKExprNoun <|> parseKExprTerm <|> parseKEmpty
+parseKExpr = dbg "parseKExprNoun" parseKExprNoun <|> parseKExprTerm <|> parseKEmpty
   where
     parseKEmpty = do
       _ <- some spaceChar
@@ -65,10 +66,10 @@ parseKVerb = do
 
 parseKNoun :: ParserK KNoun
 parseKNoun =
-  try parseKNounTermExprs
-  <|> try parseKNounExprs0
-  <|> try parseKNounExprs1
-  <|> try parseKNounNoun
+  parseKNounTermExprs
+  <|> parseKNounExprs0
+  <|> parseKNounExprs1
+  <|> parseKNounNoun
   where
     parseKNounTermExprs = do
       term <- parseKTerm
