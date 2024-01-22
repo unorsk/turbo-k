@@ -21,7 +21,6 @@ common warnings
 executable turbo-k
   import:           warnings, extensions
   main-is:          Main.hs
-  other-modules:    TurboK
   hs-source-dirs:   app
   build-depends:
     , base                  ^>=4.18.0.0
@@ -36,11 +35,13 @@ test-suite turbo-k-test
   import:           warnings, extensions
   default-language: GHC2021
   type:             exitcode-stdio-1.0
-  hs-source-dirs:   test
+  hs-source-dirs:   test app
   main-is:          Main.hs
   build-depends:
     , base              ^>=4.18.0.0
     , hspec
     , hspec-megaparsec
     , megaparsec
-    , turbo-k
+    , text
+
+-- , turbo-k

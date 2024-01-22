@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# LANGUAGE OverloadedStrings #-}
-module TurboK (parseKExpr, parseK) where
-import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof, try), empty, some, many, (<|>))
+-- module TurboK ( parseK ) where
+module TurboK where
+import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof), empty, some, many, (<|>), try)
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec.Char (letterChar, digitChar, hexDigitChar, string, char, spaceChar)
@@ -10,26 +11,23 @@ import Text.Megaparsec.Char.Lexer (charLiteral)
 
 type ParserK = Parsec Void Text
 
-data KExprs = KExprs [KExpr] deriving (Show)
-data KExpr = KExprNoun KNoun KVerb KExpr | KExprTerm KTerm KExpr | KExprEmpty deriving (Show)
--- data KExpr = KExprNoun KNoun KVerb  | KExprTerm KTerm  | KExprEmpty deriving (Show)
-data KTerm = KTermNoun KNoun | KTermVerb KVerb deriving (Show)
--- data KVerb = KVerbWithAdverb KTerm KAdverb | KVerb KVerbTerm deriving (Show)
--- data KNoun = KNounTermExprs KTerm KExprs | KNounExprs0 KExprs | KNounExprs1 KExprs | KNoun KNounTerm deriving Show
-data KVerb = KVerbWithAdverb  KAdverb | KVerb KVerbTerm deriving (Show)
-data KNoun = KNounTermExprs  KExprs | KNounExprs0 KExprs | KNounExprs1 KExprs | KNoun KNounTerm deriving Show
-data KVerbTerm = KVerbTerm KVerbBuiltIn | KVerbWithGets KVerbBuiltIn deriving Show
-data KVerbBuiltIn = KVBIGet | KVBIPlus | KVBIMinus | KVBITimes | KVBIDropFloor deriving Show
-data KNounTerm = KNounName KName | KNounInts KInts | KNounFloats KFloats | KNounString String | KNounSymbols KSymbols  deriving (Show)
-data KName = KName String deriving (Show)
-data KAdverb = AdverbEach | AdverbOverJoin | AdverbScanSplit | AdverbEachPrior | AdverbEachRight | AdverbEchLeft deriving (Show)
-data KInts = KInts [Int]  deriving (Show)
-data KFloats = KFloats [Float] deriving (Show)
-data KString = KStringChars String | KStringBytes deriving (Show)
-data Bytes = Bytes Bytes KHex KHex | EmptyBytes deriving (Show)
-data KSymbols = KSymbols [KSymbol] | KSingleSymbol KSymbol deriving (Show)
-data KSymbol = KSymbol String deriving (Show)
-data KHex = KHex String deriving Show
+data KExprs = KExprs [KExpr] deriving (Show, Eq)
+data KExpr = KExprNoun KNoun KVerb KExpr | KExprTerm KTerm KExpr | KExprEmpty deriving (Show, Eq)
+data KTerm = KTermNoun KNoun | KTermVerb KVerb deriving (Show, Eq)
+data KVerb = KVerbWithAdverb KTerm KAdverb | KVerb KVerbTerm deriving (Show, Eq)
+data KNoun = KNounTermExprs KTerm KExprs | KNounExprs0 KExprs | KNounExprs1 KExprs | KNoun KNounTerm deriving (Show, Eq)
+data KVerbTerm = KVerbTerm KVerbBuiltIn | KVerbWithGets KVerbBuiltIn deriving (Show, Eq)
+data KVerbBuiltIn = KVBIGet | KVBIPlus | KVBIMinus | KVBITimes | KVBIDropFloor deriving (Show, Eq)
+data KNounTerm = KNounName KName | KNounInts KInts | KNounFloats KFloats | KNounString String | KNounSymbols KSymbols  deriving (Show, Eq)
+data KName = KName String deriving (Show, Eq)
+data KAdverb = AdverbEach | AdverbOverJoin | AdverbScanSplit | AdverbEachPrior | AdverbEachRight | AdverbEchLeft deriving (Show, Eq)
+data KInts = KInts [Int]  deriving (Show, Eq)
+data KFloats = KFloats [Float] deriving (Show, Eq)
+data KString = KStringChars String | KStringBytes deriving (Show, Eq)
+data Bytes = Bytes Bytes KHex KHex | EmptyBytes deriving (Show, Eq)
+data KSymbols = KSymbols [KSymbol] deriving (Show, Eq)
+data KSymbol = KSymbol String deriving (Show, Eq)
+data KHex = KHex String deriving (Show, Eq)
 
 parseK :: ParserK KExprs
 parseK = parseExprs <* choice [empty, eof]
@@ -37,7 +35,6 @@ parseK = parseExprs <* choice [empty, eof]
 parseExprs :: ParserK KExprs
 parseExprs = KExprs <$> sepBy parseKExpr (char ';')
 
--- data KExpr = KExprNoun KNoun KVerb KExpr | KExprTerm KTerm KExpr | KExprEmpty deriving (Show)
 parseKExpr :: ParserK KExpr
 parseKExpr = parseKExprNoun <|> parseKExprTerm <|> parseKEmpty
   where
@@ -54,11 +51,8 @@ parseKExpr = parseKExprNoun <|> parseKExprTerm <|> parseKEmpty
       expr <- parseKExpr
       return $ KExprNoun noun verb expr
 
-
 parseKTerm :: ParserK KTerm
-parseKTerm = do
-  KTermNoun <$> parseKNoun
-  <|> KTermVerb <$> parseKVerb
+parseKTerm = KTermNoun <$> parseKNoun <|> KTermVerb <$> parseKVerb
 
 parseKVerb :: ParserK KVerb
 parseKVerb = do
@@ -66,23 +60,20 @@ parseKVerb = do
   <|> KVerb <$> parseKVerbTerm
     where
       parseKVerWithAdverb = do
-        -- term <- parseKTerm
-        -- KVerbWithAdverb term <$> parseKAdverb
-        KVerbWithAdverb  <$> parseKAdverb
+        term <- parseKTerm
+        KVerbWithAdverb term <$> parseKAdverb
 
 parseKNoun :: ParserK KNoun
 parseKNoun =
-  parseKNounTermExprs
-  <|> parseKNounExprs0
-  <|> parseKNounExprs1
-  <|> parseKNounNoun
+  try parseKNounTermExprs
+  <|> try parseKNounExprs0
+  <|> try parseKNounExprs1
+  <|> try parseKNounNoun
   where
     parseKNounTermExprs = do
-      -- term <- parseKTerm
-      -- exprs <- between (char '[') (char ']') parseExprs
-      -- return $ KNounTermExprs term exprs
+      term <- parseKTerm
       exprs <- between (char '[') (char ']') parseExprs
-      return $ KNounTermExprs exprs
+      return $ KNounTermExprs term exprs
     parseKNounExprs0 = KNounExprs0 <$> between (char '(') (char ')') parseExprs
     parseKNounExprs1 = KNounExprs0 <$> between (char '{') (char '}') parseExprs
     parseKNounNoun = KNoun <$> parseKNounTerm
@@ -100,8 +91,7 @@ parseKString :: ParserK String
 parseKString = char '"' >> manyTill charLiteral (char '"')
 
 parseKFloats :: ParserK KFloats
-parseKFloats = do
-  KFloats <$> sepBy1 parseKFloat (char ' ')
+parseKFloats = KFloats <$> sepBy1 parseKFloat (char ' ')
   where
     parseKFloat = do
       h <- some digitChar
@@ -110,17 +100,14 @@ parseKFloats = do
       return (read (h <> "." <> t) :: Float)
 
 parseKInts :: ParserK KInts
-parseKInts = do
-  KInts <$> sepBy1 parseKInt (char ' ')
+parseKInts = KInts <$> sepBy1 parseKInt (char ' ')
   where
     parseKInt = do
       int <- some digitChar
       return (read int :: Int)
 
 parseKSymbols :: ParserK KSymbols
-parseKSymbols = do
-  smbls <- some parseKSymbol
-  return $ if length smbls > 1 then KSymbols smbls else KSingleSymbol $ head smbls
+parseKSymbols = KSymbols <$> some parseKSymbol
 
 parseKSymbol :: ParserK KSymbol
 parseKSymbol = do
@@ -131,9 +118,7 @@ parseKHex :: ParserK KHex
 parseKHex = KHex <$> many hexDigitChar
 
 parseKVerbTerm :: ParserK KVerbTerm
-parseKVerbTerm = do
-  KVerbTerm <$> parseKVerbBuiltIn
-  <|> (KVerbWithGets <$> parseKVerbBuiltIn <* char ':')
+parseKVerbTerm = KVerbTerm <$> parseKVerbBuiltIn <|> (KVerbWithGets <$> parseKVerbBuiltIn <* char ':')
 
 parseKVerbBuiltIn :: ParserK KVerbBuiltIn
 parseKVerbBuiltIn = do

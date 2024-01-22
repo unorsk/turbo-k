@@ -1,36 +1,41 @@
 module Main (main) where
 
-import Evalq (evalq)
-import Grammarq (QAst (..), QExpr (..), QNoun (..))
-import Parserq (Expr (..), QOperation (..), QTerm (..), parseq)
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import Text.Megaparsec
 
--- import Text.Megaparsec.Char
+import TurboK
 
 main :: IO ()
 main = hspec $ do
-  testEvalq
-  testParseq
+  -- testEval
+  testParse
 
-testParseq :: SpecWith ()
-testParseq =
-  describe "parseq" $ do
-    describe "simple symbol" $ do
+testParse :: SpecWith ()
+testParse =
+  describe "parse" $ do
+    describe "names" $ do
+      it "Parses name" $
+        parse parseKName "" "abc" `shouldParse` KName "abc"
+    describe "symbols" $ do
       it "Parses symbol" $
-        parse parseq "" "`abc" `shouldParse` Term (QSymbol "abc")
-    describe "simple int" $ do
-      it "Parses int" $
-        parse parseq "" "1" `shouldParse` Term (QInt 1)
-    describe "int addition" $ do
-      it "Sum ints" $
-        parse parseq "" "1+1"
-          `shouldParse` Expr (QInt 1) Add (QInt 1)
+        parse parseKSymbol "" "`abc" `shouldParse` KSymbol "abc"
+      it "Parses multiple symbols" $
+        parse parseKSymbols "" "`abc`bcd" `shouldParse` KSymbols [KSymbol "abc", KSymbol "bcd"]
+    describe "nouns terminals" $ do
+      it "Parses symbol" $
+        parse parseKNounTerm "" "`abc" `shouldParse` KNounSymbols (KSymbols [KSymbol "abc"])
+      it "Parses name" $
+        parse parseKNounTerm "" "abc" `shouldParse` KNounName (KName "abc")
+      it "Parses ints" $
+        parse parseKNounTerm "" "1 2 3" `shouldParse` KNounInts (KInts [1, 2, 3])
+      it "Parses ints" $
+        parse parseKNounTerm "" "1 2 3" `shouldParse` KNounInts (KInts [1, 2, 3])
+      it "Parses string" $
+        parse parseKNounTerm "" "\"1 2 3\"" `shouldParse` KNounString "1 2 3"
+    describe "nouns Exprs" $ do
+      it "Parses 1+1" $
+        parse parseKExpr "" "1+1" `shouldParse` KExprNoun (KNoun (KNounInts $ KInts [1]))
+          (KVerb $ KVerbTerm KVBIPlus)
+          (KExprTerm (KTermNoun (KNoun (KNounInts $ KInts [1]))) KExprEmpty)
 
-testEvalq :: SpecWith ()
-testEvalq =
-  describe "evalq" $ do
-    describe "simple stuff" $ do
-      it "Evaluates a single boolean" $
-        evalq (QAst [QExpr2 (Left (QNounBooleans [True])) Empty]) `shouldBe` "1b"
