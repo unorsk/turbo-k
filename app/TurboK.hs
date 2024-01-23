@@ -3,12 +3,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- module TurboK ( parseK ) where
 module TurboK where
-import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof), empty, some, many, (<|>), try)
+import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof), empty, some, many, (<|>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec.Char (letterChar, digitChar, hexDigitChar, string, char, spaceChar)
 import Text.Megaparsec.Char.Lexer (charLiteral)
 import Text.Megaparsec.Debug (dbg)
+import Control.Applicative (Alternative, (<**>))
 
 type ParserK = Parsec Void Text
 
@@ -30,6 +31,11 @@ data KSymbols = KSymbols [KSymbol] deriving (Show, Eq)
 data KSymbol = KSymbol String deriving (Show, Eq)
 data KHex = KHex String deriving (Show, Eq)
 
+chainl1 :: Alternative m => m a -> m (a -> a -> a) -> m a
+chainl1 p op = scan where
+  scan = p <**> rst
+  rst = (\f y g x -> g (f x y)) <$> op <*> p <*> rst <|> pure id
+  
 parseK :: ParserK KExprs
 parseK = dbg "parseExprs" parseExprs <* choice [empty, eof]
 
