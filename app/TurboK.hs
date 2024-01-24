@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# LANGUAGE OverloadedStrings #-}
--- module TurboK ( parseK ) where
-module TurboK where
+module TurboK ( parseK ) where
+-- module TurboK where
 import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof), empty, some, many, (<|>))
 import Data.Text (Text)
 import Data.Void (Void)
@@ -11,93 +11,72 @@ import Text.Megaparsec.Char.Lexer (charLiteral)
 import Text.Megaparsec.Debug (dbg)
 import Control.Applicative (Alternative, (<**>))
 
-type ParserK = Parsec Void Text
+type KP = Parsec Void Text
 
-data KExprs = KExprs [KExpr] deriving (Show, Eq)
-data KExpr =  KExprNoun KNoun KVerb KExpr | KExprTerm KTerm KExpr | KExprEmpty deriving (Show, Eq)
-data KTerm = KTermNoun KNoun | KTermVerb KVerb deriving (Show, Eq)
-data KVerb = KVerbWithAdverb KTerm KAdverb | KVerb KVerbTerm deriving (Show, Eq)
-data KNoun = KNounTermExprs KTerm KExprs | KNounExprs0 KExprs | KNounExprs1 KExprs | KNoun KNounTerm deriving (Show, Eq)
-data KVerbTerm = KVerbTerm KVerbBuiltIn | KVerbWithGets KVerbBuiltIn deriving (Show, Eq)
-data KVerbBuiltIn = KVBIGet | KVBIPlus | KVBIMinus | KVBITimes | KVBIDropFloor deriving (Show, Eq)
-data KNounTerm = KNounName KName | KNounInts KInts | KNounFloats KFloats | KNounString String | KNounSymbols KSymbols  deriving (Show, Eq)
-data KName = KName String deriving (Show, Eq)
-data KAdverb = AdverbEach | AdverbOverJoin | AdverbScanSplit | AdverbEachPrior | AdverbEachRight | AdverbEchLeft deriving (Show, Eq)
-data KInts = KInts [Int]  deriving (Show, Eq)
-data KFloats = KFloats [Float] deriving (Show, Eq)
-data KString = KStringChars String | KStringBytes deriving (Show, Eq)
-data Bytes = Bytes Bytes KHex KHex | EmptyBytes deriving (Show, Eq)
-data KSymbols = KSymbols [KSymbol] deriving (Show, Eq)
-data KSymbol = KSymbol String deriving (Show, Eq)
-data KHex = KHex String deriving (Show, Eq)
+data Exprs        = Exprs [Expr] deriving (Show, Eq)
+data Expr         = ExprNoun Noun Verb Expr | ExprTerm Term Expr | ExprEmpty deriving (Show, Eq)
+data Term         = TermNoun Noun | TermVerb Verb deriving (Show, Eq)
+data Verb         = VerbWithAdverb Term Adverb | Verb VerbTerm deriving (Show, Eq)
+data Noun         = NounExprs0 Term Exprs | NounExprs1 Exprs | NounExprs2 Exprs | Noun NounTerm deriving (Show, Eq)
+data VerbTerm     = VerbTerm VerbBuiltIn | VerbWithGets VerbBuiltIn deriving (Show, Eq)
+data VerbBuiltIn  = VBIGet | VBIPlus | VBIMinus | VBITimes | VBIDropFloor deriving (Show, Eq)
+data NounTerm     = NounName Name | NounInts Ints | NounFloats Floats | NounString String | NounSymbols Symbols deriving (Show, Eq)
+data Name         = Name String deriving (Show, Eq)
+data Adverb       = AdverbEach | AdverbOverJoin | AdverbScanSplit | AdverbEachPrior | AdverbEachRight | AdverbEchLeft deriving (Show, Eq)
+data Ints         = Ints [Int]  deriving (Show, Eq)
+data Floats       = Floats [Float] deriving (Show, Eq)
+data Str          = StrChars String | StrBytes deriving (Show, Eq)
+data Bytes        = Bytes Bytes Hex Hex | EmptyBytes deriving (Show, Eq)
+data Symbols      = Symbols [Symbol] deriving (Show, Eq)
+data Symbol       = Symbol String deriving (Show, Eq)
+data Hex          = Hex String deriving (Show, Eq)
 
 chainl1 :: Alternative m => m a -> m (a -> a -> a) -> m a
 chainl1 p op = scan where
   scan = p <**> rst
   rst = (\f y g x -> g (f x y)) <$> op <*> p <*> rst <|> pure id
-  
-parseK :: ParserK KExprs
+
+parseK :: KP Exprs
 parseK = dbg "parseExprs" exprs <* choice [empty, eof]
 
-exprs :: ParserK KExprs
-exprs = KExprs <$> sepBy kexpr (char ';')
+exprs :: KP Exprs
+exprs = Exprs <$> sepBy expr (char ';')
 
-kexpr :: ParserK KExpr
-kexpr = dbg "parseKExprNoun" parseKExprNoun <|> parseKExprTerm <|> parseKEmpty
+expr :: KP Expr
+expr = dbg "parseKExprNoun" exprNoun <|> exprTerm <|> empty'
   where
-    parseKEmpty = do
-      _ <- some spaceChar
-      return KExprEmpty
-    parseKExprTerm = do
-      term <- kTerm
-      expr <- kexpr
-      return $ KExprTerm term expr
-    parseKExprNoun = do
-      noun <- kNoun
-      verb <- kVerb
-      expr <- kexpr
-      return $ KExprNoun noun verb expr
+    empty' = return ExprEmpty <* some spaceChar
+    exprTerm = ExprTerm <$> term  <*> expr
+    exprNoun = ExprNoun <$> noun <*> verb <*> expr
 
-kTerm :: ParserK KTerm
-kTerm = KTermNoun <$> kNoun <|> KTermVerb <$> kVerb
+term :: KP Term
+term = TermNoun <$> noun <|> TermVerb <$> verb
 
-kVerb :: ParserK KVerb
-kVerb = do
-  parseKVerWithAdverb
-  <|> KVerb <$> kVerbTerm
-    where
-      parseKVerWithAdverb = do
-        term <- kTerm
-        KVerbWithAdverb term <$> kAdverb
+verb :: KP Verb
+verb = do
+  VerbWithAdverb <$> term <*> adverb
+  <|> Verb <$> verbTerm
 
-kNoun :: ParserK KNoun
-kNoun =
-  parseKNounTermExprs
-  <|> parseKNounExprs0
-  <|> parseKNounExprs1
-  <|> parseKNounNoun
-  where
-    parseKNounTermExprs = do
-      term <- kTerm
-      exprs1 <- between (char '[') (char ']') exprs
-      return $ KNounTermExprs term exprs1
-    parseKNounExprs0 = KNounExprs0 <$> between (char '(') (char ')') exprs
-    parseKNounExprs1 = KNounExprs1 <$> between (char '{') (char '}') exprs
-    parseKNounNoun = KNoun <$> kNounTerm
+noun :: KP Noun
+noun =
+  NounExprs0 <$> term <*> between (char '[') (char ']') exprs
+  <|> NounExprs1 <$> between (char '(') (char ')') exprs
+  <|> NounExprs2 <$> between (char '{') (char '}') exprs
+  <|> Noun <$> nounTerm
 
-kNounTerm :: ParserK KNounTerm
-kNounTerm = do
-  KNounName <$> kName
-  <|> KNounInts <$> kInts
-  <|> KNounFloats <$> kFloats
-  <|> KNounString <$> kString
-  <|> KNounSymbols <$> kSymbols
+nounTerm :: KP NounTerm
+nounTerm = do
+  NounName <$> name
+  <|> NounInts <$> ints
+  <|> NounFloats <$> floats
+  <|> NounString <$> kstr
+  <|> NounSymbols <$> symbols
 
-kString :: ParserK String
-kString = char '"' >> manyTill charLiteral (char '"')
+kstr :: KP String
+kstr = char '"' >> manyTill charLiteral (char '"')
 
-kFloats :: ParserK KFloats
-kFloats = KFloats <$> sepBy1 parseKFloat (char ' ')
+floats :: KP Floats
+floats = Floats <$> sepBy1 parseKFloat (char ' ')
   where
     parseKFloat = do
       h <- some digitChar
@@ -105,37 +84,35 @@ kFloats = KFloats <$> sepBy1 parseKFloat (char ' ')
       t <- some digitChar
       return (read (h <> "." <> t) :: Float)
 
-kInts :: ParserK KInts
-kInts = KInts <$> sepBy1 parseKInt (char ' ')
+ints :: KP Ints
+ints = Ints <$> sepBy1 parseKInt (char ' ')
   where
     parseKInt = do
       int <- some digitChar
       return (read int :: Int)
 
-kSymbols :: ParserK KSymbols
-kSymbols = KSymbols <$> some kSymbol
+symbols :: KP Symbols
+symbols = Symbols <$> some kSymbol
 
-kSymbol :: ParserK KSymbol
-kSymbol = do
-  _ <- single '`'
-  KSymbol <$> (many letterChar <|> (many letterChar <> many digitChar))
+kSymbol :: KP Symbol
+kSymbol = Symbol <$ single '`' <*> (many letterChar <|> (many letterChar <> many digitChar))
 
-parseKHex :: ParserK KHex
-parseKHex = KHex <$> many hexDigitChar
+hex :: KP Hex
+hex = Hex <$> many hexDigitChar
 
-kVerbTerm :: ParserK KVerbTerm
-kVerbTerm = KVerbTerm <$> kVerbBuiltIn <|> (KVerbWithGets <$> kVerbBuiltIn <* char ':')
+verbTerm :: KP VerbTerm
+verbTerm = VerbTerm <$> verbBuiltIn <|> (VerbWithGets <$> verbBuiltIn <* char ':')
 
-kVerbBuiltIn :: ParserK KVerbBuiltIn
-kVerbBuiltIn = do
-  KVBIGet <$ char ':'
-  <|> KVBIPlus <$ char '+'
-  <|> KVBIMinus <$ char '-'
-  <|> KVBITimes <$ char '*'
-  <|> KVBIDropFloor <$ char '_'
+verbBuiltIn :: KP VerbBuiltIn
+verbBuiltIn = do
+  VBIGet <$ char ':'
+  <|> VBIPlus <$ char '+'
+  <|> VBIMinus <$ char '-'
+  <|> VBITimes <$ char '*'
+  <|> VBIDropFloor <$ char '_'
 
-kAdverb :: ParserK KAdverb
-kAdverb = do
+adverb :: KP Adverb
+adverb = do
   AdverbEach <$ string "'"
   <|> AdverbOverJoin <$ string "/"
   <|> AdverbScanSplit <$ string "\\"
@@ -144,5 +121,5 @@ kAdverb = do
   <|> AdverbEchLeft <$ string "\\:"
 
 -- TODO handle dots in names
-kName :: ParserK KName
-kName = KName <$> (some letterChar <|> (some letterChar <> many digitChar))
+name :: KP Name
+name = Name <$> (some letterChar <|> (some letterChar <> many digitChar))
