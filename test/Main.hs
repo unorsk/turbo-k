@@ -36,15 +36,18 @@ testParse =
     -- 
     -- the tests below don't work :/ 
     --
-    -- describe "noun terminal" $ do
-    --   it "parses 1" $
-    --     parse (noun <* eof) "" "1" `shouldParse` Noun (NounInts $ Ints [1])
-    --   it "parses 1 2 3" $
-    --     parse (noun <* eof) "" "1 2 3" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
-    --   it "parses [1 2 3]" $
-    --     parse (noun <* eof) "" "[1 2 3]" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
-    --   it "parses [1 2 3]" $
-    --     parse (noun <* eof) "" "(1 2 3)" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
+    describe "noun terminal" $ do
+      -- it "parses 1" $
+      --   parse (noun <* eof) "" "1" `shouldParse` Noun (NounInts $ Ints [1])
+      -- it "parses 1 2 3" $
+      --   parse (noun <* eof) "" "1 2 3" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
+        
+      -- it "parses [1 2 3]" $
+      --   parse (noun <* eof) "" "[1 2 3]" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
+      it "parses (1 2 3)" $
+        parse (noun <* eof) "" "(1 2 3)" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
+      it "parses 1 2 3" $
+        parse (noun <* eof) "" "1 2 3" `shouldParse` Noun (NounInts $ Ints [1, 2, 3])
     -- describe "nouns Exprs" $ do
     --   it "Parses 1+1" $
     --     parse (expr <* eof) "" "1+1" `shouldParse` ExprNoun (Noun (NounInts $ Ints [1]))

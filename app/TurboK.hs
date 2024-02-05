@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# LANGUAGE StrictData #-}
-module TurboK ( parseK ) where
--- module TurboK where
-import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, choice, MonadParsec (eof), empty, some, many, (<|>))
+-- module TurboK ( parseK ) where
+module TurboK where
+import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, MonadParsec (eof), empty, some, many, (<|>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec.Char (letterChar, digitChar, hexDigitChar, string, char, spaceChar)
@@ -37,17 +37,17 @@ chainl1 p op = scan where
   rst = (\f y g x -> g (f x y)) <$> op <*> p <*> rst <|> pure id
 
 parseK :: KP Exprs
-parseK = dbg "parseExprs" exprs <* choice [empty, eof]
+parseK = dbg "parseExprs" exprs <* (empty <|> eof)
 
 exprs :: KP Exprs
-exprs = Exprs <$> sepBy expr (char ';')
+exprs = Exprs <$> sepBy expr (char ';') -- this one
 
 expr :: KP Expr
 expr = dbg "parseKExprNoun" exprNoun <|> exprTerm <|> empty'
   where
-    empty' = return ExprEmpty <* some spaceChar
-    exprTerm = ExprTerm <$> term  <*> expr
     exprNoun = ExprNoun <$> noun <*> verb <*> expr
+    exprTerm = ExprTerm <$> term  <*> expr
+    empty' = return ExprEmpty <* some spaceChar
 
 term :: KP Term
 term = TermNoun <$> noun <|> TermVerb <$> verb
@@ -59,10 +59,10 @@ verb = do
 
 noun :: KP Noun
 noun =
-  NounExprs0 <$> term <*> between (char '[') (char ']') exprs
+  Noun <$> nounTerm
+  <|> NounExprs0 <$> term <*> between (char '[') (char ']') exprs
   <|> NounExprs1 <$> between (char '(') (char ')') exprs
   <|> NounExprs2 <$> between (char '{') (char '}') exprs
-  <|> Noun <$> nounTerm
 
 nounTerm :: KP NounTerm
 nounTerm = do
