@@ -95,3 +95,70 @@ with minor variations between dialects, as:
 <Hex>    ::=  <Digit> | "a" | .. | "f"
 <Letter> ::=  "A" | .. | "Z" | "a" | .. | "z"
 ```
+
+### And yet another BNF I found somewhere
+```
+root ::= top* separator_or_eof
+
+top ::= namespace_declaration | command_statement | mode_directive | expression_list
+
+expression_list ::= separator | expression (separator+ expression)*
+expression ::= q_sql | noun_or_verb noun_or_verb? adverb? expression?
+q_sql ::= q_sql_template [expression] q_sql_from [expression]
+
+noun_or_verb ::= noun | primitive_verb [colon] | system_function
+noun ::= control_flow | args | group_or_list | primitive_noun | assignment | user_id
+
+control_flow ::= control_statement | conditional_evaluation
+control_statement ::= control args
+conditional_evaluation ::= conditional args
+args ::= open_bracket expression_list* close_bracket
+
+system_function ::= q_system_function | signal | trace | colon
+group_or_list ::= open_paren expression_list* close_paren
+
+lambda ::= open_brace [lambda_params] adverb? expression_list* close_brace
+lambda_params ::= open_bracket [user_id (separator user_id)*] close_bracket
+
+separator ::= semicolon | newline
+separator_or_eof ::= separator | eof
+
+command_statement ::= command [expression]
+namespace_declaration ::= current_namespace user_id
+mode_directive ::= mode expression
+
+assignment ::= user_id [args] (colon [colon] | verb colon | colon verb colon)
+
+control="if"|"do"|"while"
+conditional=":"|"?"|"$"|"@"|"."
+
+primitive_noun ::= vector | atom | lambda
+vector ::= symbol_vector | number_vector | string
+atom ::= symbol | number | char
+symbol_vector ::= symbol symbol+
+symbol ::= symbol_token
+
+user_id ::= user_identifier | q_system_function
+
+symbol_token ::= 'symbol_token'
+newline ::= '\n'
+semicolon ::= ';'
+eof ::= 'eof'
+conditional ::= 'conditional'
+control ::= 'control'
+colon ::= ':'
+open_paren ::= '('
+close_paren ::= ')'
+open_bracket ::= '['
+close_bracket ::= ']'
+adverb ::= '/'
+close_brace ::= '{'
+open_brace ::= '}'
+mode ::= 'q' | 'k'
+current_namespace ::= 'namespace'
+command ::= 'command'
+char ::= 'a' | 'z'
+number ::= '0'|'9'
+string ::= [char]
+number_vector ::= [number]
+```
