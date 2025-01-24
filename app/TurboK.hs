@@ -3,7 +3,8 @@
 {-# LANGUAGE StrictData #-}
 -- module TurboK ( parseK ) where
 module TurboK where
-import Text.Megaparsec (Parsec, single, sepBy1, between, manyTill, sepBy, MonadParsec (eof), empty, some, many, (<|>))
+import Text.Megaparsec.Char.Lexer (decimal)
+import Text.Megaparsec (Parsec, single, sepBy, sepBy1, between, manyTill, MonadParsec (eof), empty, some, try, many, (<|>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec.Char (letterChar, digitChar, hexDigitChar, string, char, spaceChar)
@@ -20,8 +21,9 @@ data Verb         = VerbWithAdverb Term Adverb | Verb VerbTerm deriving (Show, E
 data Noun         = NounExprs0 Term Exprs | NounExprs1 Exprs | NounExprs2 Exprs | Noun NounTerm deriving (Show, Eq)
 data VerbTerm     = VerbTerm VerbBuiltIn | VerbWithGets VerbBuiltIn deriving (Show, Eq)
 data VerbBuiltIn  = VBIGet | VBIPlus | VBIMinus | VBITimes | VBIDropFloor deriving (Show, Eq)
-data NounTerm     = NounName Name | NounInts Ints | NounFloats Floats | NounString String | NounSymbols Symbols deriving (Show, Eq)
+data NounTerm     = NounNames Names | NounInts Ints | NounFloats Floats | NounString String | NounSymbols Symbols deriving (Show, Eq)
 data Name         = Name String deriving (Show, Eq)
+data Names        = Names [Name] deriving (Show, Eq)
 data Adverb       = AdverbEach | AdverbOverJoin | AdverbScanSplit | AdverbEachPrior | AdverbEachRight | AdverbEchLeft deriving (Show, Eq)
 data Ints         = Ints [Int]  deriving (Show, Eq)
 data Floats       = Floats [Float] deriving (Show, Eq)
@@ -49,8 +51,15 @@ expr = dbg "parseKExprNoun" exprNoun <|> exprTerm <|> empty'
     exprTerm = ExprTerm <$> term  <*> expr
     empty' = return ExprEmpty <* some spaceChar
 
+-- expr :: KP Expr
+-- expr = (nve <|> {- te <|> -} empty')
+--   where
+--     nve = ExprNoun <$> ( _ `chainr1` _)
+--     -- te = ExprTerm <$> term  <*> expr
+--     empty' = return ExprEmpty <* some spaceChar
+
 term :: KP Term
-term = TermNoun <$> noun <|> TermVerb <$> verb
+term = TermNoun <$> noun <|> TermVerb <$> verb <|> empty
 
 verb :: KP Verb
 verb = do
@@ -66,7 +75,7 @@ noun =
 
 nounTerm :: KP NounTerm
 nounTerm = do
-  NounName <$> name
+  NounNames <$> names
   <|> NounInts <$> ints
   <|> NounFloats <$> floats
   <|> NounString <$> kstr
@@ -85,11 +94,7 @@ floats = Floats <$> sepBy1 parseKFloat (char ' ')
       return (read (h <> "." <> t) :: Float)
 
 ints :: KP Ints
-ints = Ints <$> sepBy1 parseKInt (char ' ')
-  where
-    parseKInt = do
-      int <- some digitChar
-      return (read int :: Int)
+ints = Ints <$> sepBy1 decimal (char ' ')
 
 symbols :: KP Symbols
 symbols = Symbols <$> some kSymbol
@@ -123,3 +128,6 @@ adverb = do
 -- TODO handle dots in names
 name :: KP Name
 name = Name <$> (some letterChar <|> (some letterChar <> many digitChar))
+
+names :: KP Names
+names = dbg "names" $ Names <$> sepBy1 name (char ' ')

@@ -27,6 +27,7 @@ executable turbo-k
     , haskeline
     , megaparsec
     , optparse-applicative
+    , parser-combinators
     , text
 
   default-language: GHC2021
@@ -35,7 +36,10 @@ test-suite turbo-k-test
   import:           warnings, extensions
   default-language: GHC2021
   type:             exitcode-stdio-1.0
-  other-modules:    TurboK
+  other-modules:
+    TurboK
+    TurboK2
+
   hs-source-dirs:   test app
   main-is:          Main.hs
   build-depends:
